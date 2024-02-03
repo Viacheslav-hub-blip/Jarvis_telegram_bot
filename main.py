@@ -1,11 +1,10 @@
 import asyncio
 import logging
 
-from aiogram import Bot, Dispatcher
+from aiogram import Bot, Dispatcher, Router
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.fsm.storage.memory import MemoryStorage
-from aiogram.utils.chat_action import  ChatActionMiddleware
-
+from aiogram.utils.chat_action import ChatActionMiddleware
 from handlers import router
 import config
 
@@ -19,6 +18,8 @@ async def main():
     dp.include_router(router)
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
+
+print(type(router))
 
 
 if __name__ == "__main__":

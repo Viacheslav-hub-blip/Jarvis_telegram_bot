@@ -1,3 +1,6 @@
+from aiogram.client import bot
+from aiogram.enums import ContentType
+
 import text
 from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
@@ -79,3 +82,36 @@ async def generate_text(message: Message, state: FSMContext):
     mesg = await message.answer(text.gen_wait)
     res = await gigaChat.generate_simple_answer(text_for_AI)
     await mesg.edit_text(res, disable_web_page_preview=True)
+
+
+@router.callback_query(F.data == 'text_content')
+async def input_text_for_text_content(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Generate.text_content)
+    await callback.message.edit_text(text.text_content)
+    await callback.message.answer(text.gen_exit, reply_markup=keyboards.exit_kb)
+
+
+@router.message(Generate.text_content)
+@flags.chat_action("typing")
+async def generate_content_of_text(message: Message):
+    destination = r"C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\File_for_text_content"
+    await message.bot.download(file=message.document.file_id, destination=destination)
+    wait_message = await message.answer(text.gen_text)
+    answer = await gigaChat.text_content(destination)
+    await wait_message.edit_text(answer, disable_web_page_preview=True)
+
+
+@router.callback_query(F.data == 'text_from_audio')
+async def input_audio_for_get_text(callback: CallbackQuery, state: FSMContext):
+    await state.set_state(Generate.text_for_audio)
+    await callback.message.edit_text(text.text_for_audio_input)
+    await callback.message.answer(text.gen_exit, reply_markup=keyboards.exit_kb)
+
+
+@router.message(Generate.text_for_audio)
+@router.message(F.content_type == ContentType.AUDIO)
+@flags.chat_action("typing")
+async def generate_text_from_audio(message: Message):
+    destination = r"C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\File_audio_for_get_text"
+    await message.bot.download(file=message.document.file_id, destination=destination)
+    pass
