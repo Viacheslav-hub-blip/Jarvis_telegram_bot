@@ -34,6 +34,12 @@ async def menu(msg: Message):
     await msg.answer(text.menu, reply_markup=keyboards.menu_kb)
 
 
+@router.callback_query(F.data == "выйти в меню")
+async def menu_callback(callback: CallbackQuery):
+    await callback.message.delete()
+    await callback.message.answer(text.menu, reply_markup=keyboards.menu_kb)
+
+
 """Handlers для раздела AI"""
 
 
@@ -134,6 +140,7 @@ async def generate_text_from_audio(message: Message):
 """Handlers для раздела 'заметки' """
 
 
-
-
-
+@router.callback_query(F.data == 'notes')
+async def show_kb_for_show_edit_delete_create_notes(callback: CallbackQuery):
+    await callback.message.edit_text(text.text_for_notes_kb,
+                                     reply_markup=keyboards.notes_show_or_edit_or_delete_kb_or_create)
