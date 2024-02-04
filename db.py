@@ -16,6 +16,34 @@ class Note(NamedTuple):
     file_expansion: str
 
 
+class User(NamedTuple):
+    user_id: int
+    first_enter: str
+    user_name: str
+
+
+def insert_new_user(user_id: int, first_enter: str, user_name: str) -> str:
+    sql_insert_query = "insert into users(user_id, first_enter, name) values(?, ?, ?)"
+    user_data = (user_id, first_enter, user_name)
+    cursor.execute(sql_insert_query, user_data)
+    conn.commit()
+    print('новый пользователь сохранен')
+    return 'новый пользователь сохранен'
+
+
+def get_user_by_user_id(user_id: int) -> User | None:
+    get_user_query = "select * from users where user_id = ?"
+    cursor.execute(get_user_query, (user_id,))
+    user = cursor.fetchall()
+    if len(user) != 0:
+        user = user[0]
+        user = User(user[0], user[1], user[2])
+        print(user)
+        return user
+    else:
+        return None
+
+
 def convert_to_binary_data(filename):
     print('convert', filename)
     with open(filename, 'rb') as file:
@@ -56,7 +84,8 @@ def read_from_notes_by_id(id: int) -> Note:
         file_path = f"users_files\{user_id}_{topic}.{file_expansion}"
         write_to_file(file, file_path)
 
-        note = Note(id=row[0], user_id=user_id, topic=topic, description=description, date=date, file_path=file_path, file_expansion=file_expansion)
+        note = Note(id=row[0], user_id=user_id, topic=topic, description=description, date=date, file_path=file_path,
+                    file_expansion=file_expansion)
     print(note)
     cursor.close()
     return note
@@ -79,9 +108,10 @@ def check_db_exists():
     _init_db()
 
 
-
-
-
 check_db_exists()
-insert_to_notes('тестовый топик 3', 123456, 'тестовое описание', '03.02.2024 9:55', r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
-read_from_notes_by_id(3)
+# insert_to_notes('тестовый топик 3', 123456, 'тестовое описание', '03.02.2024 9:55',
+#                r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
+# read_from_notes_by_id(3)
+
+# insert_new_user(123, 'True', 'Slava')
+#get_user_by_user_id(12)

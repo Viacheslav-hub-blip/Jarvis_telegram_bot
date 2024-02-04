@@ -11,6 +11,7 @@ from aiogram.fsm.context import FSMContext
 import gigaChat
 from states import Generate
 from aiogram.types import ReplyKeyboardRemove
+import db
 
 import keyboards
 
@@ -18,8 +19,18 @@ router = Router()
 
 
 @router.message(Command("start"))
-async def start_handler(msg: Message):
-    await msg.answer(text.greet.format(name=msg.from_user.full_name), reply_markup=keyboards.menu_kb)
+async def start_handler(message: Message):
+    user_id = message.from_user.id
+    user = db.get_user_by_user_id(user_id)
+    print(user)
+
+    if user:
+        await message.answer(text.text_for_old_user.format(name=message.from_user.full_name),
+                             reply_markup=keyboards.menu_kb)
+    else:
+        db.insert_new_user(user_id, message.from_user.full_name, 'False')
+        await message.answer(text.text_for_new_user.format(name=message.from_user.full_name, user_id=user_id),
+                             reply_markup=keyboards.menu_kb)
 
 
 @router.message(F.text == "Меню")
