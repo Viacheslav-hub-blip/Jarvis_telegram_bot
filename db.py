@@ -1,46 +1,65 @@
 import os
 import sqlite3
+from typing import NamedTuple
 
 conn = sqlite3.connect('sqlite_python.db')
 cursor = conn.cursor()
 
 
+class Note(NamedTuple):
+    id: int
+    user_id: int
+    topic: str
+    description: str
+    date: str
+    file_path: str
+    file_expansion: str
+
+
 def convert_to_binary_data(filename):
+    print('convert', filename)
     with open(filename, 'rb') as file:
         blob_data = file.read()
     return blob_data
 
 
-def insert_to_notes(topic: str, description: str, date_st: str, file_path: str):
-    sql_insert_query = "insert into notes(topic, description, date, file) values (?, ?, ?, ?)"
+def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_path: str):
+    sql_insert_query = "insert into notes(topic, user_id, description, date, file, file_expansion) values (?, ?,?, ?, ?, ?)"
     file_binary = convert_to_binary_data(file_path)
-    data_tuple = (topic, description, date_st, file_binary)
+    file_expansion = file_path.split('.')[1]
+    data_tuple = (topic, user_id, description, date_st, file_binary, file_expansion)
     cursor.execute(sql_insert_query, data_tuple)
     conn.commit()
-    print('проведена загрузка')
-    cursor.close()
+    print('проведена загрузка', file_expansion)
 
 
-def write_to_file(data):
-    with open('test.txt', 'w+b') as file:
+def write_to_file(data, filepath):
+    with open(filepath, 'wb') as file:
         file.write(data)
     print('сохранен')
 
 
-def read_from_notes_by_id(id: int):
+def read_from_notes_by_id(id: int) -> Note:
+    global note
     sql_read_query = "select * from notes where id = ?"
     cursor.execute(sql_read_query, (id,))
     record = cursor.fetchall()
 
     for row in record:
-        topic = row[1]
-        description = row[2]
-        date = row[3]
-        file = row[4]
-        write_to_file(file)
+        topic = row[2]
+        user_id = row[1]
+        description = row[3]
+        date = row[4]
+        file = row[5]
+        file_expansion = row[6]
 
-        print(topic, description, date)
+        file_path = f"users_files\{user_id}_{topic}.{file_expansion}"
+        write_to_file(file, file_path)
+
+        note = Note(id=row[0], user_id=user_id, topic=topic, description=description, date=date, file_path=file_path, file_expansion=file_expansion)
+    print(note)
     cursor.close()
+    return note
 
 
 def _init_db():
@@ -60,6 +79,9 @@ def check_db_exists():
     _init_db()
 
 
+
+
+
 check_db_exists()
-#insert_to_notes('тестовый топик', 'тестовое описание', '03.02.2024 9:55', 'requirements.txt')
-read_from_notes_by_id(1)
+insert_to_notes('тестовый топик 3', 123456, 'тестовое описание', '03.02.2024 9:55', r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
+read_from_notes_by_id(3)
