@@ -1,5 +1,4 @@
-from aiogram.client import bot
-from aiogram.enums import ContentType
+from aiogram.types import FSInputFile
 
 import speech_regnize
 import text
@@ -28,7 +27,7 @@ async def start_handler(message: Message):
         await message.answer(text.text_for_old_user.format(name=message.from_user.full_name),
                              reply_markup=keyboards.menu_kb)
     else:
-        db.insert_new_user(user_id, message.from_user.full_name, 'False')
+        db.insert_new_user(user_id, 'False', message.from_user.full_name)
         await message.answer(text.text_for_new_user.format(name=message.from_user.full_name, user_id=user_id),
                              reply_markup=keyboards.menu_kb)
 
@@ -155,3 +154,27 @@ async def generate_text_from_audio(message: Message):
 async def show_kb_for_show_edit_delete_create_notes(callback: CallbackQuery):
     await callback.message.edit_text(text.text_for_notes_kb,
                                      reply_markup=keyboards.notes_show_or_edit_or_delete_kb_or_create)
+
+
+@router.callback_query(F.data == 'show_notes')
+async def show_notes_for_user(callback: CallbackQuery):
+    user_id = callback.from_user.id
+    print('заметки', user_id)
+    notes = db.get_from_notes_by_user_id(user_id)
+    print(len(notes))
+    if len(notes) != 0:
+        await callback.message.edit_text('Ваши заметки:')
+        for note in notes:
+            if note.file_path != '':
+                file = FSInputFile(note.file_path)
+                parse = f"Тема: {note.topic}\n" \
+                        f"Содержание: {note.description}\n" \
+                        f"Дата: {note.date}"
+                await callback.message.answer_document(file, caption=parse)
+            else:
+                parse = f"Тема: {note.topic}\n" \
+                        f"Содержание: {note.description}\n" \
+                        f"Дата: {note.date}"
+                await callback.message.answer(parse)
+    else:
+        await callback.message.answer('у вас еще нет заметок')

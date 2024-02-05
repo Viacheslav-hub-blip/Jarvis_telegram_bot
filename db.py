@@ -62,12 +62,13 @@ def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, fi
 
 
 def write_to_file(data, filepath):
+    print(filepath)
     with open(filepath, 'wb') as file:
         file.write(data)
     print('сохранен')
 
 
-def read_from_notes_by_id(id: int) -> Note:
+def get_from_notes_by_note_id(id: int) -> Note:
     global note
     sql_read_query = "select * from notes where id = ?"
     cursor.execute(sql_read_query, (id,))
@@ -91,6 +92,32 @@ def read_from_notes_by_id(id: int) -> Note:
     return note
 
 
+def get_from_notes_by_user_id(user_id: int) -> [Note]:
+    sql_query_for_get_notes_by_user_id = "select * from notes where user_id = ?"
+    cursor.execute(sql_query_for_get_notes_by_user_id, (user_id,))
+    notes = cursor.fetchall()
+    return_dict = []
+    for note in notes:
+        note_id = note[0]
+        user_id = note[1]
+        topic = note[2]
+        description = note[3]
+        date = note[4]
+        file_data = note[5]
+        file_expansion = note[6]
+        print('exp', file_expansion)
+
+        file_path = f"users_files/{user_id}_{topic}.{file_expansion}"
+
+        write_to_file(file_data, file_path)
+
+        my_note = Note(note_id, user_id, topic, description, date, file_path, file_expansion)
+
+        return_dict.append(my_note)
+
+    return return_dict
+
+
 def _init_db():
     """инициализация БД"""
     with open("createdb.sql", 'r') as f:
@@ -109,9 +136,9 @@ def check_db_exists():
 
 
 check_db_exists()
-# insert_to_notes('тестовый топик 3', 123456, 'тестовое описание', '03.02.2024 9:55',
-#                r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
+#insert_to_notes('тестовый топик 3', 382117477, 'тестовое описание', '03.02.2024 9:55',
+#               r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
 # read_from_notes_by_id(3)
-
+#print(get_from_notes_by_user_id(382117477))
 # insert_new_user(123, 'True', 'Slava')
-#get_user_by_user_id(12)
+# get_user_by_user_id(12)
