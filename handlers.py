@@ -1,3 +1,5 @@
+import os
+
 from aiogram.types import FSInputFile
 
 import speech_regnize
@@ -158,23 +160,26 @@ async def show_kb_for_show_edit_delete_create_notes(callback: CallbackQuery):
 
 @router.callback_query(F.data == 'show_notes')
 async def show_notes_for_user(callback: CallbackQuery):
-    user_id = callback.from_user.id
-    print('заметки', user_id)
-    notes = db.get_from_notes_by_user_id(user_id)
-    print(len(notes))
+    notes = db.get_from_notes_by_user_id(callback.from_user.id)
     if len(notes) != 0:
-        await callback.message.edit_text('Ваши заметки:')
+        await callback.message.answer('Ваши заметки:')
         for note in notes:
             if note.file_path != '':
                 file = FSInputFile(note.file_path)
-                parse = f"Тема: {note.topic}\n" \
-                        f"Содержание: {note.description}\n" \
-                        f"Дата: {note.date}"
+                parse = parse_note(note)
                 await callback.message.answer_document(file, caption=parse)
+                os.remove(note.file_path)
             else:
-                parse = f"Тема: {note.topic}\n" \
-                        f"Содержание: {note.description}\n" \
-                        f"Дата: {note.date}"
+                parse =parse_note(note)
                 await callback.message.answer(parse)
+        await callback.message.answer('Главное меню', reply_markup=keyboards.menu_kb)
     else:
         await callback.message.answer('у вас еще нет заметок')
+        await callback.message.answer('Главное меню', reply_markup=keyboards.menu_kb)
+
+
+def parse_note(note: db.Note) -> str:
+    parse = f"Тема: {note.topic}\n" \
+            f"Содержание: {note.description}\n" \
+            f"Дата: {note.date}"
+    return parse

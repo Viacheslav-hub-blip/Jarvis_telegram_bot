@@ -19,7 +19,7 @@ async def main():
     await bot.delete_webhook(drop_pending_updates=True)
     await dp.start_polling(bot, allowed_updates=dp.resolve_used_update_types())
 
-print(type(router))
+#print(type(router))
 
 
 if __name__ == "__main__":

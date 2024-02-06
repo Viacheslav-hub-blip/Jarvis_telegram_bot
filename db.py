@@ -53,19 +53,23 @@ def convert_to_binary_data(filename):
 
 def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_path: str):
     sql_insert_query = "insert into notes(topic, user_id, description, date, file, file_expansion) values (?, ?,?, ?, ?, ?)"
-    file_binary = convert_to_binary_data(file_path)
-    file_expansion = file_path.split('.')[1]
+    if file_path != '':
+        file_binary = convert_to_binary_data(file_path)
+        file_expansion = file_path.split('.')[1]
+    else:
+        file_binary = ''
+        file_expansion = ''
     data_tuple = (topic, user_id, description, date_st, file_binary, file_expansion)
     cursor.execute(sql_insert_query, data_tuple)
     conn.commit()
-    print('проведена загрузка', file_expansion)
+    # print('проведена загрузка', file_expansion)
 
 
 def write_to_file(data, filepath):
-    print(filepath)
+    # print(filepath)
     with open(filepath, 'wb') as file:
         file.write(data)
-    print('сохранен')
+    # print('сохранен')
 
 
 def get_from_notes_by_note_id(id: int) -> Note:
@@ -75,20 +79,15 @@ def get_from_notes_by_note_id(id: int) -> Note:
     record = cursor.fetchall()
 
     for row in record:
-        topic = row[2]
-        user_id = row[1]
-        description = row[3]
-        date = row[4]
-        file = row[5]
-        file_expansion = row[6]
+        note_id, user_id, topic, description, date, file_data, file_expansion = selection_from_note(note)
+        file_path = ''
+        if file_data != '':
+            file_path = f"users_files\{user_id}_{topic}.{file_expansion}"
+            write_to_file(file_data, file_path)
 
-        file_path = f"users_files\{user_id}_{topic}.{file_expansion}"
-        write_to_file(file, file_path)
-
-        note = Note(id=row[0], user_id=user_id, topic=topic, description=description, date=date, file_path=file_path,
+        note = Note(id=note_id, user_id=user_id, topic=topic, description=description, date=date, file_path=file_path,
                     file_expansion=file_expansion)
-    print(note)
-    cursor.close()
+
     return note
 
 
@@ -98,24 +97,30 @@ def get_from_notes_by_user_id(user_id: int) -> [Note]:
     notes = cursor.fetchall()
     return_dict = []
     for note in notes:
-        note_id = note[0]
-        user_id = note[1]
-        topic = note[2]
-        description = note[3]
-        date = note[4]
-        file_data = note[5]
-        file_expansion = note[6]
-        print('exp', file_expansion)
-
-        file_path = f"users_files/{user_id}_{topic}.{file_expansion}"
-
-        write_to_file(file_data, file_path)
+        note_id, user_id, topic, description, date, file_data, file_expansion = selection_from_note(note)
+        file_path = ''
+        if file_data != '':
+            file_path = f"users_files/{user_id}_{topic}.{file_expansion}"
+            write_to_file(file_data, file_path)
 
         my_note = Note(note_id, user_id, topic, description, date, file_path, file_expansion)
 
         return_dict.append(my_note)
 
     return return_dict
+
+
+def selection_from_note(note: Note) -> ():
+    note_id = note[0]
+    user_id = note[1]
+    topic = note[2]
+    description = note[3]
+    date = note[4]
+    file_data = note[5]
+    file_expansion = note[6]
+
+    res = [note_id, user_id, topic, description, date, file_data, file_expansion]
+    return tuple(res)
 
 
 def _init_db():
@@ -136,9 +141,8 @@ def check_db_exists():
 
 
 check_db_exists()
-#insert_to_notes('тестовый топик 3', 382117477, 'тестовое описание', '03.02.2024 9:55',
-#               r'C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\trash_files\photo_2024-01-18_18-27-09.jpg')
-# read_from_notes_by_id(3)
-#print(get_from_notes_by_user_id(382117477))
+# insert_to_notes('тестовый топик 4', 382117477, 'тестовое описание', '03.02.2024 9:55', '')
+# print(get_from_notes_by_user_id(382117477))
+# print(get_from_notes_by_user_id(382117477))
 # insert_new_user(123, 'True', 'Slava')
 # get_user_by_user_id(12)
