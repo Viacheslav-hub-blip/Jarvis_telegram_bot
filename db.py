@@ -52,7 +52,7 @@ def convert_to_binary_data(filename):
 
 
 def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_path: str):
-    sql_insert_query = "insert into notes(topic, user_id, description, date, file, file_expansion) values (?, ?,?, ?, ?, ?)"
+    sql_insert_query = "insert into notes(topic, user_id, description, date, file.txt, file_expansion) values (?, ?,?, ?, ?, ?)"
     if file_path != '':
         file_binary = convert_to_binary_data(file_path)
         file_expansion = file_path.split('.')[1]

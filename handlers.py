@@ -1,3 +1,4 @@
+import io
 import os
 
 from aiogram.types import FSInputFile
@@ -10,7 +11,7 @@ from aiogram.filters import Command
 from aiogram import flags
 from aiogram.fsm.context import FSMContext
 import gigaChat
-from states import Generate
+from states import Generate, Create_Note
 from aiogram.types import ReplyKeyboardRemove
 import db
 
@@ -170,7 +171,7 @@ async def show_notes_for_user(callback: CallbackQuery):
                 await callback.message.answer_document(file, caption=parse)
                 os.remove(note.file_path)
             else:
-                parse =parse_note(note)
+                parse = parse_note(note)
                 await callback.message.answer(parse)
         await callback.message.answer('Главное меню', reply_markup=keyboards.menu_kb)
     else:
@@ -183,3 +184,35 @@ def parse_note(note: db.Note) -> str:
             f"Содержание: {note.description}\n" \
             f"Дата: {note.date}"
     return parse
+
+
+@router.callback_query(F.data == 'create_note')
+async def start_create_new_note(callback: CallbackQuery, state: FSMContext):
+    await callback.message.edit_text('Тема топика или кнопка для выхода')
+    await state.set_state(Create_Note.create_topic)
+
+
+@router.message(Create_Note.create_topic)
+async def create_topic_for_note(message: Message, state: FSMContext):
+    await state.update_data(topic_note=message.text)
+    await state.set_state(Create_Note.create_description)
+    await message.answer('Текст заметки')
+
+
+@router.message(Create_Note.create_description)
+async def create_description_for_note(message: Message, state: FSMContext):
+    await state.update_data(desription_note=message.text)
+    await state.set_state(Create_Note.create_date)
+    await message.answer('Дата: ')
+
+
+@router.message(Create_Note.create_date)
+async def create_date_for_note(message: Message, state: FSMContext):
+    await state.update_data(date_note=message.text)
+    await state.set_state(Create_Note.create_file)
+    await message.answer('Фаил')
+
+
+@router.message()
+async def create_file_for_note(message: Message, state: FSMContext):
+    file_id = message.document.file_id

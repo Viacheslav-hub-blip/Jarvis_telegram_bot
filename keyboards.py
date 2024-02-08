@@ -22,7 +22,7 @@ notes_show_or_edit_or_delete_kb_or_create = [
     [InlineKeyboardButton(text='Посмотреть заметки', callback_data='show_notes')],
     [InlineKeyboardButton(text='редактировать заметки', callback_data='edit_notes')],
     [InlineKeyboardButton(text='удалить заметки', callback_data='delete_notes')],
-    [InlineKeyboardButton(text='создать заметки', callback_data='create_notes')],
+    [InlineKeyboardButton(text='создать заметку', callback_data='create_note')],
     [InlineKeyboardButton(text='В меню', callback_data='выйти в меню')],
 ]
 
