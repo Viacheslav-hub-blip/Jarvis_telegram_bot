@@ -12,8 +12,7 @@ class Note(NamedTuple):
     topic: str
     description: str
     date: str
-    file_path: str
-    file_expansion: str
+    file_id: str
 
 
 class User(NamedTuple):
@@ -51,15 +50,9 @@ def convert_to_binary_data(filename):
     return blob_data
 
 
-def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_path: str):
-    sql_insert_query = "insert into notes(topic, user_id, description, date, file.txt, file_expansion) values (?, ?,?, ?, ?, ?)"
-    if file_path != '':
-        file_binary = convert_to_binary_data(file_path)
-        file_expansion = file_path.split('.')[1]
-    else:
-        file_binary = ''
-        file_expansion = ''
-    data_tuple = (topic, user_id, description, date_st, file_binary, file_expansion)
+def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_id: str):
+    sql_insert_query = "insert into notes(topic, user_id, description, date, file_id) values (?, ?, ?, ?, ?)"
+    data_tuple = (topic, user_id, description, date_st, file_id)
     cursor.execute(sql_insert_query, data_tuple)
     conn.commit()
     # print('проведена загрузка', file_expansion)
@@ -79,14 +72,9 @@ def get_from_notes_by_note_id(id: int) -> Note:
     record = cursor.fetchall()
 
     for row in record:
-        note_id, user_id, topic, description, date, file_data, file_expansion = selection_from_note(note)
-        file_path = ''
-        if file_data != '':
-            file_path = f"users_files\{user_id}_{topic}.{file_expansion}"
-            write_to_file(file_data, file_path)
+        note_id, user_id, topic, description, date, file_id = selection_from_note(note)
 
-        note = Note(id=note_id, user_id=user_id, topic=topic, description=description, date=date, file_path=file_path,
-                    file_expansion=file_expansion)
+        note = Note(id=note_id, user_id=user_id, topic=topic, description=description, date=date, file_id=file_id)
 
     return note
 
@@ -97,13 +85,9 @@ def get_from_notes_by_user_id(user_id: int) -> [Note]:
     notes = cursor.fetchall()
     return_dict = []
     for note in notes:
-        note_id, user_id, topic, description, date, file_data, file_expansion = selection_from_note(note)
-        file_path = ''
-        if file_data != '':
-            file_path = f"users_files/{user_id}_{topic}.{file_expansion}"
-            write_to_file(file_data, file_path)
+        note_id, user_id, topic, description, date, file_id = selection_from_note(note)
 
-        my_note = Note(note_id, user_id, topic, description, date, file_path, file_expansion)
+        my_note = Note(note_id, user_id, topic, description, date, file_id)
 
         return_dict.append(my_note)
 
@@ -116,10 +100,9 @@ def selection_from_note(note: Note) -> ():
     topic = note[2]
     description = note[3]
     date = note[4]
-    file_data = note[5]
-    file_expansion = note[6]
+    file_id = note[5]
 
-    res = [note_id, user_id, topic, description, date, file_data, file_expansion]
+    res = [note_id, user_id, topic, description, date, file_id]
     return tuple(res)
 
 

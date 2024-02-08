@@ -4,7 +4,7 @@ create table notes(
     topic varchar(255),
     description text,
     date varchar(255),
-    file blob,
+    file varchar(255),
     foreign key(user_id) references users(user_id) on delete cascade
 );
 
