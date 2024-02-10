@@ -50,11 +50,12 @@ def convert_to_binary_data(filename):
     return blob_data
 
 
-def insert_to_notes(topic: str, user_id: int, description: str, date_st: str, file_id: str):
-    sql_insert_query = "insert into notes(topic, user_id, description, date, file_id) values (?, ?, ?, ?, ?)"
-    data_tuple = (topic, user_id, description, date_st, file_id)
+def save_new_note(user_id: int, topic: str, description: str, date_st: str, file_id: str) -> str:
+    sql_insert_query = "insert into notes(user_id, topic, description, date, file) values (?, ?, ?, ?, ?)"
+    data_tuple = (user_id, topic, description, date_st, file_id)
     cursor.execute(sql_insert_query, data_tuple)
     conn.commit()
+    return 'заметка сохранена'
     # print('проведена загрузка', file_expansion)
 
 

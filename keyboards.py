@@ -18,6 +18,7 @@ gigiChat_kb = [
     [InlineKeyboardButton(text="в меню", callback_data="выйти в меню")]
 ]
 
+
 notes_show_or_edit_or_delete_kb_or_create = [
     [InlineKeyboardButton(text='Посмотреть заметки', callback_data='show_notes')],
     [InlineKeyboardButton(text='редактировать заметки', callback_data='edit_notes')],
@@ -26,6 +27,12 @@ notes_show_or_edit_or_delete_kb_or_create = [
     [InlineKeyboardButton(text='В меню', callback_data='выйти в меню')],
 ]
 
+save_or_cansel_note = [
+    [InlineKeyboardButton(text='Сохранить заметку', callback_data='save_note')],
+    [InlineKeyboardButton(text='Удалить заметку', callback_data='delete_note')]
+]
+
+save_or_cansel_note = InlineKeyboardMarkup(inline_keyboard=save_or_cansel_note)
 menu_kb = InlineKeyboardMarkup(inline_keyboard=menu_kb)
 gigiChat_kb = InlineKeyboardMarkup(inline_keyboard=gigiChat_kb)
 notes_show_or_edit_or_delete_kb_or_create = InlineKeyboardMarkup(

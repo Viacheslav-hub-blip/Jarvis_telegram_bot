@@ -13,3 +13,4 @@ class Create_Note(StatesGroup):
     create_description = State()
     create_date = State()
     create_file = State()
+    save_file = State()

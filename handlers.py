@@ -165,11 +165,9 @@ async def show_notes_for_user(callback: CallbackQuery):
     if len(notes) != 0:
         await callback.message.answer('Ваши заметки:')
         for note in notes:
-            if note.file_path != '':
-                file = FSInputFile(note.file_path)
+            if note.file_id != '-':
                 parse = parse_note(note)
-                await callback.message.answer_document(file, caption=parse)
-                os.remove(note.file_path)
+                await callback.message.answer_document(note.file_id, caption=parse)
             else:
                 parse = parse_note(note)
                 await callback.message.answer(parse)
@@ -188,7 +186,7 @@ def parse_note(note: db.Note) -> str:
 
 @router.callback_query(F.data == 'create_note')
 async def start_create_new_note(callback: CallbackQuery, state: FSMContext):
-    await callback.message.edit_text('Тема топика или кнопка для выхода')
+    await callback.message.answer('Тема топика или кнопка для выхода')
     await state.set_state(Create_Note.create_topic)
 
 
@@ -213,6 +211,29 @@ async def create_date_for_note(message: Message, state: FSMContext):
     await message.answer('Фаил')
 
 
-@router.message()
+@router.message(Create_Note.create_file)
 async def create_file_for_note(message: Message, state: FSMContext):
-    file_id = message.document.file_id
+    if message.document != None:
+        file_id = message.document.file_id
+        await state.update_data(file_id=file_id)
+        await state.set_state(Create_Note.save_file)
+    else:
+        await state.update_data(file_id='-')
+        await state.set_state(Create_Note.save_file)
+    await message.answer('Подтвердить сохранение', reply_markup=keyboards.save_or_cansel_note)
+
+
+@router.callback_query(Create_Note.save_file)
+async def save_note(callback: CallbackQuery, state: FSMContext):
+    print(callback.data)
+    if callback.data == 'save_note':
+        user_data = await state.get_data()
+        user_id, topic, description, date, file_id = callback.from_user.id, user_data['topic_note'], user_data[
+            'desription_note'], user_data['date_note'], user_data['file_id']
+        answer = db.save_new_note(user_id, topic, description, date, file_id)
+        await callback.message.answer('Заметка сохранена', reply_markup=ReplyKeyboardRemove())
+        await menu_callback(callback)
+    else:
+        await callback.message.answer('Заметка удалена', reply_markup=ReplyKeyboardRemove())
+        await menu_callback(callback)
+    await state.clear()
