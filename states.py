@@ -14,3 +14,8 @@ class Create_Note(StatesGroup):
     create_date = State()
     create_file = State()
     save_file = State()
+
+
+class Delete_Note(StatesGroup):
+    get_number_note = State()
+    delete_note = State()

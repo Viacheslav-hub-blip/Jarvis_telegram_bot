@@ -59,6 +59,13 @@ def save_new_note(user_id: int, topic: str, description: str, date_st: str, file
     # print('проведена загрузка', file_expansion)
 
 
+def delete_note_by_note_id(id: int) -> str:
+    delete_query = 'delete from notes where id = ?'
+    cursor.execute(delete_query, (id,))
+    conn.commit()
+    return 'заметка удалена'
+
+
 def write_to_file(data, filepath):
     # print(filepath)
     with open(filepath, 'wb') as file:

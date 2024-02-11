@@ -4,6 +4,7 @@ import os
 from aiogram.types import FSInputFile
 
 import speech_regnize
+import states
 import text
 from aiogram import F, Router
 from aiogram.types import Message, CallbackQuery
@@ -16,6 +17,8 @@ from aiogram.types import ReplyKeyboardRemove
 import db
 
 import keyboards
+from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, \
+    KeyboardButton
 
 router = Router()
 
@@ -237,3 +240,43 @@ async def save_note(callback: CallbackQuery, state: FSMContext):
         await callback.message.answer('Заметка удалена', reply_markup=ReplyKeyboardRemove())
         await menu_callback(callback)
     await state.clear()
+
+
+@router.callback_query(F.data == 'delete_notes')
+async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
+    all_notes = db.get_from_notes_by_user_id(callback.from_user.id)
+    d = {}
+    for i in range(len(all_notes)):
+        note = all_notes[i]
+        print(note)
+        file_id = note.file_id
+        print(file_id)
+
+        if file_id != '-':
+            parse = parse_note(note)
+            await callback.message.answer_document(note.file_id, caption=f'Номер заметки: {i}\n' + parse)
+        else:
+            parse = parse_note(note)
+            await callback.message.answer(f'Номер заметки: {i}\n' + parse)
+
+        d[f'{i}'] = note.id
+    await state.update_data(d=d)
+    await state.set_state(states.Delete_Note.get_number_note)
+    await callback.message.answer('Напишите номера заметок для удаления')
+
+
+@router.message(states.Delete_Note.get_number_note)
+async def delete_note_by_number(message: Message, state: FSMContext):
+    if len(message.text) > 1:
+        numbers = [int(x) for x in message.text.split(',')]
+    else:
+        numbers = [int(message.text)]
+    print(numbers)
+    d = await state.get_data()
+    d = d['d']
+    for num in numbers:
+        note_id = d[f'{num}']
+        db.delete_note_by_note_id(note_id)
+
+    await message.answer('заметки удалены')
+    await menu(message)
