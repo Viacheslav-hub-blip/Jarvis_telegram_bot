@@ -158,12 +158,16 @@ async def generate_text_from_audio(message: Message):
 
 @router.callback_query(F.data == 'notes')
 async def show_kb_for_show_edit_delete_create_notes(callback: CallbackQuery):
+    """Показывает возможные действия с заметками"""
     await callback.message.edit_text(text.text_for_notes_kb,
                                      reply_markup=keyboards.notes_show_or_edit_or_delete_kb_or_create)
 
 
 @router.callback_query(F.data == 'show_notes')
 async def show_notes_for_user(callback: CallbackQuery):
+    """Показывает все заметки пользователя
+    Если заметок нет, то сразу переход в главное меню
+    """
     notes = db.get_from_notes_by_user_id(callback.from_user.id)
     if len(notes) != 0:
         await callback.message.answer('Ваши заметки:')
@@ -181,6 +185,7 @@ async def show_notes_for_user(callback: CallbackQuery):
 
 
 def parse_note(note: db.Note) -> str:
+    """Парсить заметки"""
     parse = f"Тема: {note.topic}\n" \
             f"Содержание: {note.description}\n" \
             f"Дата: {note.date}"
@@ -189,12 +194,14 @@ def parse_note(note: db.Note) -> str:
 
 @router.callback_query(F.data == 'create_note')
 async def start_create_new_note(callback: CallbackQuery, state: FSMContext):
+    """Первое вводное сообщение - ввод темы"""
     await callback.message.answer('Тема топика или кнопка для выхода')
     await state.set_state(Create_Note.create_topic)
 
 
 @router.message(Create_Note.create_topic)
 async def create_topic_for_note(message: Message, state: FSMContext):
+    """Сохранение темы и предложение ввести текст заметки"""
     await state.update_data(topic_note=message.text)
     await state.set_state(Create_Note.create_description)
     await message.answer('Текст заметки')
@@ -202,6 +209,7 @@ async def create_topic_for_note(message: Message, state: FSMContext):
 
 @router.message(Create_Note.create_description)
 async def create_description_for_note(message: Message, state: FSMContext):
+    """Сохранение текста заметки, предложение ввести дату"""
     await state.update_data(desription_note=message.text)
     await state.set_state(Create_Note.create_date)
     await message.answer('Дата: ')
@@ -209,6 +217,7 @@ async def create_description_for_note(message: Message, state: FSMContext):
 
 @router.message(Create_Note.create_date)
 async def create_date_for_note(message: Message, state: FSMContext):
+    """Сохранение даты, предложение добавить фаил"""
     await state.update_data(date_note=message.text)
     await state.set_state(Create_Note.create_file)
     await message.answer('Фаил')
@@ -216,6 +225,7 @@ async def create_date_for_note(message: Message, state: FSMContext):
 
 @router.message(Create_Note.create_file)
 async def create_file_for_note(message: Message, state: FSMContext):
+    """Если существует документ, то добавляем документ. Если сообщение без документа, то ставим - в id документа"""
     if message.document != None:
         file_id = message.document.file_id
         await state.update_data(file_id=file_id)
@@ -228,6 +238,7 @@ async def create_file_for_note(message: Message, state: FSMContext):
 
 @router.callback_query(Create_Note.save_file)
 async def save_note(callback: CallbackQuery, state: FSMContext):
+    """Сохранение заметки, если была нажата кнопка сохранить, то получаем save_note. Сохраняем заметку"""
     print(callback.data)
     if callback.data == 'save_note':
         user_data = await state.get_data()
@@ -244,6 +255,7 @@ async def save_note(callback: CallbackQuery, state: FSMContext):
 
 @router.callback_query(F.data == 'delete_notes')
 async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
+    """Показываем все заметки пользователя для дальнейшего удаления. К каждой заметке добавляем номер"""
     all_notes = db.get_from_notes_by_user_id(callback.from_user.id)
     d = {}
     for i in range(len(all_notes)):
@@ -267,6 +279,7 @@ async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
 
 @router.message(states.Delete_Note.get_number_note)
 async def delete_note_by_number(message: Message, state: FSMContext):
+    """Удаляем заметки"""
     if len(message.text) > 1:
         numbers = [int(x) for x in message.text.split(',')]
     else:
