@@ -56,7 +56,7 @@ async def menu_callback(callback: CallbackQuery):
     await callback.message.answer(text.menu, reply_markup=keyboards.menu_kb)
 
 
-"""Handlers для раздела AI"""
+"""------------------------------------------Handlers для раздела AI---------------------------------------------------"""
 
 
 @router.callback_query(F.data == 'ai')
@@ -253,28 +253,20 @@ async def save_note(callback: CallbackQuery, state: FSMContext):
     await state.clear()
 
 
+"""------------------------------------------Удаление заметок-------------------------------------------------------"""
+
+
 @router.callback_query(F.data == 'delete_notes')
 async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
     """Показываем все заметки пользователя для дальнейшего удаления. К каждой заметке добавляем номер"""
     all_notes = db.get_from_notes_by_user_id(callback.from_user.id)
-    d = {}
-    for i in range(len(all_notes)):
-        note = all_notes[i]
-        print(note)
-        file_id = note.file_id
-        print(file_id)
-
-        if file_id != '-':
-            parse = parse_note(note)
-            await callback.message.answer_document(note.file_id, caption=f'Номер заметки: {i}\n' + parse)
-        else:
-            parse = parse_note(note)
-            await callback.message.answer(f'Номер заметки: {i}\n' + parse)
-
-        d[f'{i}'] = note.id
-    await state.update_data(d=d)
-    await state.set_state(states.Delete_Note.get_number_note)
-    await callback.message.answer('Напишите номера заметок для удаления')
+    if len(all_notes) > 0:
+        note_dict = show_notes_add_to_dict(callback, all_notes)
+        await state.update_data(d=note_dict)
+        await state.set_state(states.Delete_Note.get_number_note)
+        await callback.message.answer('Напишите номера заметок для удаления')
+    else:
+        await callback.message.answer('Заметок еще нет')
 
 
 @router.message(states.Delete_Note.get_number_note)
@@ -293,3 +285,60 @@ async def delete_note_by_number(message: Message, state: FSMContext):
 
     await message.answer('заметки удалены')
     await menu(message)
+
+
+"""------------------------------------------------Редактирвоание заметок-----------------------------------------------------"""
+
+
+async def show_notes_add_to_dict(callback: CallbackQuery, notes) -> dict:
+    d = {}
+    for i in range(len(notes)):
+        note = notes[i]
+        file_id = note.file_id
+
+        if file_id != '-':
+            parse = parse_note(note)
+            await callback.message.answer_document(note.file_id, caption=f'Номер заметки: {i}\n' + parse)
+        else:
+            parse = parse_note(note)
+            await callback.message.answer(f'Номер заметки: {i}\n' + parse)
+        d[f'{i}'] = note.id
+
+    return d
+
+
+@router.callback_query(F.data == "edit_notes")
+async def show_notes_to_edit(callback: CallbackQuery, state: FSMContext):
+    notes = db.get_from_notes_by_user_id(callback.from_user.id)
+    if len(notes) > 0:
+        await callback.message.answer('Номер заметки для редактирования')
+        dict_note = await show_notes_add_to_dict(callback, notes)
+        await state.update_data(d=dict_note)
+        await state.set_state(states.Edit_Note.get_number_note)
+    else:
+        await callback.message.answer('у вас еще нет заметок')
+
+
+@router.message(states.Edit_Note.get_number_note)
+async def get_number_note_for_edit(message: Message, state: FSMContext):
+    note_number = message.text
+    d = await state.get_data()
+    d = d['d']
+    print('n', d)
+    note_id = d[note_number]
+    await state.update_data(note_id=note_id)
+    await message.answer('Выбери поле для редактирования:', reply_markup=keyboards.edit_note_kb)
+
+
+@router.callback_query(F.data == 'edit_topic')
+async def edit_topic_start(callback: CallbackQuery, state: FSMContext):
+    await callback.message.answer('Введи новый раздел')
+    await state.set_state(states.Edit_Note.edit_topic)
+
+
+@router.message(states.Edit_Note.edit_topic)
+async def edit_topic(message: Message, state: FSMContext):
+    new_topic = message.text
+    note_id = (await state.get_data())['note_id']
+    db.update_topic(note_id, new_topic)
+    await message.answer('Заметка обновлена')

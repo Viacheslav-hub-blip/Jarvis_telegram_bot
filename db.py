@@ -114,6 +114,12 @@ def selection_from_note(note: Note) -> ():
     return tuple(res)
 
 
+def update_topic(note_id, topic):
+    query = "update notes set topic = ? where id = ?"
+    cursor.execute(query, (topic, note_id))
+    conn.commit()
+
+
 def _init_db():
     """инициализация БД"""
     with open("createdb.sql", 'r') as f:

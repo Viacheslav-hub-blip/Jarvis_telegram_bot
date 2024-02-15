@@ -19,3 +19,8 @@ class Create_Note(StatesGroup):
 class Delete_Note(StatesGroup):
     get_number_note = State()
     delete_note = State()
+
+
+class Edit_Note(StatesGroup):
+    get_number_note = State()
+    edit_topic = State()

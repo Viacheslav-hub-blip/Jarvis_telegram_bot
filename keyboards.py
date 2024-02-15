@@ -32,9 +32,18 @@ save_or_cansel_note = [
     [InlineKeyboardButton(text='Удалить заметку', callback_data='delete_note')]
 ]
 
+edit_note_kb = [
+    [InlineKeyboardButton(text='Редактировать тему', callback_data='edit_topic')],
+    [InlineKeyboardButton(text='Редактировать содержание', callback_data='edit_description')],
+    [InlineKeyboardButton(text='Редактировать дату', callback_data='edit_date')],
+    [InlineKeyboardButton(text='Редактировать фаил', callback_data='edit_file')]
+]
+
+
 save_or_cansel_note = InlineKeyboardMarkup(inline_keyboard=save_or_cansel_note)
 menu_kb = InlineKeyboardMarkup(inline_keyboard=menu_kb)
 gigiChat_kb = InlineKeyboardMarkup(inline_keyboard=gigiChat_kb)
+edit_note_kb = InlineKeyboardMarkup(inline_keyboard=edit_note_kb)
 notes_show_or_edit_or_delete_kb_or_create = InlineKeyboardMarkup(
     inline_keyboard=notes_show_or_edit_or_delete_kb_or_create)
 exit_kb = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="выйти в меню")]], resize_keyboard=True, one_time_keyboard=True)
