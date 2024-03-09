@@ -1,59 +1,59 @@
 from aiogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove, \
     KeyboardButton
-
+import text
 menu_kb = [
-    [InlineKeyboardButton(text="Заметки", callback_data="notes")],
-    [InlineKeyboardButton(text="Список дел", callback_data="to_do_list")],
-    [InlineKeyboardButton(text="Погода", callback_data="weather")],
-    [InlineKeyboardButton(text="Новости", callback_data="news")],
-    [InlineKeyboardButton(text="AI", callback_data="ai")],
-    [InlineKeyboardButton(text="Настройки", callback_data="settings")]
+    [InlineKeyboardButton(text="Заметки", callback_data=text.callback_notes)],
+    [InlineKeyboardButton(text="Список дел", callback_data=text.callback_to_do_list)],
+    [InlineKeyboardButton(text="Погода", callback_data=text.callback_weather)],
+    [InlineKeyboardButton(text="Новости", callback_data=text.callback_news)],
+    [InlineKeyboardButton(text="AI", callback_data=text.callback_ai)],
+    [InlineKeyboardButton(text="Настройки", callback_data=text.callback_settings)]
 ]
 
 settings_kb = [
-    [InlineKeyboardButton(text='Город', callback_data='user_city')],
+    [InlineKeyboardButton(text='Город', callback_data=text.callback_user_city)],
                ]
 
 gigiChat_kb = [
-    [InlineKeyboardButton(text="сокращение текста", callback_data="summarize_text")],
+    [InlineKeyboardButton(text="сокращение текста", callback_data=text.callback_summarize_text_ai)],
     # [InlineKeyboardButton(text="выделение главной мысли", callback_data="main_idea_of_text")],
-    [InlineKeyboardButton(text="выделить содержимое фаила", callback_data="text_content")],
-    [InlineKeyboardButton(text="выделение текста из аудио", callback_data="text_from_audio")],
-    [InlineKeyboardButton(text="вопрос", callback_data="question")],
-    [InlineKeyboardButton(text="в меню", callback_data="выйти в меню")]
+    [InlineKeyboardButton(text="выделить содержимое фаила", callback_data=text.callback_text_content_ai)],
+    [InlineKeyboardButton(text="выделение текста из аудио", callback_data=text.text_for_audio_input)],
+    [InlineKeyboardButton(text="вопрос", callback_data=text.callback_question_ai)],
+    [InlineKeyboardButton(text="в меню", callback_data=text.callback_exit_menu_2)]
 ]
 
 
 notes_show_or_edit_or_delete_kb_or_create = [
-    [InlineKeyboardButton(text='Посмотреть заметки', callback_data='show_notes')],
-    [InlineKeyboardButton(text='редактировать заметки', callback_data='edit_notes')],
-    [InlineKeyboardButton(text='удалить заметки', callback_data='delete_notes')],
-    [InlineKeyboardButton(text='создать заметку', callback_data='create_note')],
-    [InlineKeyboardButton(text='В меню', callback_data='выйти в меню')],
+    [InlineKeyboardButton(text='Посмотреть заметки', callback_data=text.callback_show_notes)],
+    [InlineKeyboardButton(text='редактировать заметки', callback_data=text.callback_edit_notes)],
+    [InlineKeyboardButton(text='удалить заметки', callback_data=text.callback_delete_notes)],
+    [InlineKeyboardButton(text='создать заметку', callback_data=text.callback_create_note)],
+    [InlineKeyboardButton(text='В меню', callback_data=text.callback_exit_menu_2)],
 ]
 
 save_or_cansel_note = [
-    [InlineKeyboardButton(text='Сохранить заметку', callback_data='save_note')],
-    [InlineKeyboardButton(text='Удалить заметку', callback_data='delete_note')]
+    [InlineKeyboardButton(text='Сохранить заметку', callback_data=text.callback_save_note)],
+    [InlineKeyboardButton(text='Удалить заметку', callback_data=text.callback_delete_notes)]
 ]
 
 edit_note_kb = [
-    [InlineKeyboardButton(text='Редактировать тему', callback_data='edit_topic')],
-    [InlineKeyboardButton(text='Редактировать содержание', callback_data='edit_description')],
-    [InlineKeyboardButton(text='Редактировать дату', callback_data='edit_date')],
-    [InlineKeyboardButton(text='Редактировать фаил', callback_data='edit_file')]
+    [InlineKeyboardButton(text='Редактировать тему', callback_data=text.callback_edit_topic_note)],
+    [InlineKeyboardButton(text='Редактировать содержание', callback_data=text.callback_edit_description_note)],
+    [InlineKeyboardButton(text='Редактировать дату', callback_data=text.callback_edit_date_note)],
+    [InlineKeyboardButton(text='Редактировать фаил', callback_data=text.callback_edit_file_note)]
 ]
 
 edit_note_again_or_exit = [
-    [InlineKeyboardButton(text='Продолжить редактирование', callback_data='edit_notes')],
-    [InlineKeyboardButton(text='Выйти', callback_data='выйти в меню')]
+    [InlineKeyboardButton(text='Продолжить редактирование', callback_data=text.callback_edit_notes)],
+    [InlineKeyboardButton(text='Выйти', callback_data=text.callback_exit_menu_2)]
 ]
 
 todo_list_kb = [
-    [InlineKeyboardButton(text='Посмотреть список дел', callback_data='show_todo')],
-    [InlineKeyboardButton(text='Добавить', callback_data='create_todo')],
-    [InlineKeyboardButton(text='Удалить', callback_data='remove_todo')],
-    [InlineKeyboardButton(text='В меню', callback_data='выйти в меню')],
+    [InlineKeyboardButton(text='Посмотреть список дел', callback_data=text.callback_show_to_do)],
+    [InlineKeyboardButton(text='Добавить', callback_data=text.callback_create_to_do)],
+    [InlineKeyboardButton(text='Удалить', callback_data=text.callback_remove_to_do)],
+    [InlineKeyboardButton(text='В меню', callback_data=text.callback_exit_menu_2)],
 ]
 
 

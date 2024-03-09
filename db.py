@@ -29,6 +29,7 @@ class User(NamedTuple):
 
 
 def insert_new_user(user_id: int, first_enter: str, user_name: str, city: str) -> str:
+    """добавление нового пользователя"""
     sql_insert_query = "insert into users(user_id, first_enter, name, city) values(?, ?, ?, ?)"
     user_data = (user_id, first_enter, user_name, city)
     cursor.execute(sql_insert_query, user_data)
@@ -67,6 +68,21 @@ def convert_to_binary_data(filename):
     with open(filename, 'rb') as file:
         blob_data = file.read()
     return blob_data
+
+
+def get_all_users():
+    query = "select * from users"
+    cursor.execute(query)
+    res = cursor.fetchall()
+
+    users = []
+
+    for row in res:
+        user = User(row[0], row[1], row[2], row[3])
+        users.append(user)
+    print(users)
+    return users
+
 
 
 def save_new_note(user_id: int, topic: str, description: str, date_st: str, file_id: str) -> str:
@@ -192,8 +208,3 @@ def check_db_exists():
 
 
 check_db_exists()
-# insert_to_notes('тестовый топик 4', 382117477, 'тестовое описание', '03.02.2024 9:55', '')
-# print(get_from_notes_by_user_id(382117477))
-# print(get_from_notes_by_user_id(382117477))
-# insert_new_user(123, 'True', 'Slava')
-# get_user_by_user_id(12)

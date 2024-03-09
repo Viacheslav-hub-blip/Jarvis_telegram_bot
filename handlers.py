@@ -1,16 +1,17 @@
+
 import speech_regnize
 import states
 import text
-from aiogram import F, Router
+from aiogram import F, Router, flags
 from aiogram.types import Message, CallbackQuery, ReplyKeyboardRemove
 from aiogram.filters import Command
-from aiogram import flags
 from aiogram.fsm.context import FSMContext
 import gigaChat
 from states import Generate, Create_Note
 import db
 import keyboards
 import weather_formatter, weather_api_service
+from aiogram import Bot
 
 router = Router()
 
@@ -30,10 +31,10 @@ async def start_handler(message: Message):
                              reply_markup=keyboards.menu_kb)
 
 
-@router.message(F.text == "Меню")
-@router.message(F.text == "Выйти в меню")
-@router.message(F.text == "выйти в меню")
-@router.message(F.text == "◀️ Выйти в меню")
+@router.message(F.text == text.callback_menu)
+@router.message(F.text == text.callback_exit_menu_1)
+@router.message(F.text == text.callback_exit_menu_2)
+@router.message(F.text == text.callback_exit_menu_3)
 async def menu(msg: Message):
     """метод для обработки запросов по выходу в меню
     убираем все кнопки в клавиатуре и отправляем главное меню
@@ -42,49 +43,59 @@ async def menu(msg: Message):
     await msg.answer(text.menu, reply_markup=keyboards.menu_kb)
 
 
-@router.callback_query(F.data == "выйти в меню")
+@router.callback_query(F.data == text.callback_exit_menu_2)
 async def menu_callback(callback: CallbackQuery):
     await callback.message.delete()
     await callback.message.answer(text.menu, reply_markup=keyboards.menu_kb)
 
 
-@router.callback_query(F.data == 'settings')
+@router.callback_query(F.data == text.callback_settings)
 async def user_settings(callback: CallbackQuery):
-    await callback.message.answer('Список настроек', reply_markup=keyboards.settings_kb)
+    await callback.message.answer(text.message_answer_settings_list, reply_markup=keyboards.settings_kb)
 
 
-@router.callback_query(F.data == 'user_city')
+@router.callback_query(F.data == text.callback_user_city)
 async def user_city(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer('Укажите город')
+    """уизменение настроек
+    установка города, просим указать город
+    """
+    await callback.message.answer(text.message_answer_set_city)
     await state.set_state(states.Edit_city.set_city)
 
 
 @router.message(states.Edit_city.set_city)
 async def set_user_city(message: Message, state: FSMContext):
+    """изменение настроек
+    установка нового города
+    """
     db.update_city(message.from_user.id, message.text)
     await state.clear()
-    await message.answer("город обновлен", reply_markup=keyboards.menu_kb)
+    await message.answer(text.message_answer_updated_city, reply_markup=keyboards.menu_kb)
 
 
-@router.callback_query(F.data == 'weather')
+@router.callback_query(F.data == text.callback_weather)
 async def weather(callback: CallbackQuery):
+    """получаем погоду по городу пользователя"""
     user = db.get_user_by_user_id(callback.from_user.id)
-    weather = weather_formatter.format_weather(weather_api_service.get_weather(user.city))
+    if len(user.city) != 0:
+        weather = weather_formatter.format_weather(weather_api_service.get_weather(user.city))
+    else:
+        weather = text.message_answer_city_not_set
     await callback.message.answer(weather, reply_markup=keyboards.menu_kb)
 
 
 """------------------------------------------Handlers для раздела AI---------------------------------------------------"""
 
 
-@router.callback_query(F.data == 'ai')
+@router.callback_query(F.data == text.callback_ai)
 async def gigaChat_kb(callback: CallbackQuery):
     """обработка перехода кнопки AI из главного меню
     заменяем главное меню на наше сообщение
     """
-    await callback.message.answer('возможности AI', reply_markup=keyboards.gigiChat_kb)
+    await callback.message.answer(text.message_answer_ai_possible, reply_markup=keyboards.gigiChat_kb)
 
 
-@router.callback_query(F.data == "summarize_text")
+@router.callback_query(F.data == text.callback_summarize_text_ai)
 async def input_summarize_text(callback: CallbackQuery, state: FSMContext):
     """обработка перехола кнопки 'сокращение текста' из клавиатуры возможностей AI
     устанавливаем состояние
@@ -111,7 +122,7 @@ async def get_summarize_text(message: Message, state: FSMContext):
     await wait_message.edit_text(res, disable_web_page_preview=True)
 
 
-@router.callback_query(F.data == "question")
+@router.callback_query(F.data == text.callback_question_ai)
 async def input_question(callback: CallbackQuery, state: FSMContext):
     """обработка кнопки 'вопрос' """
     await state.set_state(Generate.text)
@@ -121,7 +132,7 @@ async def input_question(callback: CallbackQuery, state: FSMContext):
 
 @router.message(Generate.text)
 @flags.chat_action("typing")
-async def generate_text(message: Message, state: FSMContext):
+async def generate_text(message: Message):
     """метод для получения ответа на простой вопрос"""
     text_for_AI = message.text
     mesg = await message.answer(text.gen_wait)
@@ -129,7 +140,7 @@ async def generate_text(message: Message, state: FSMContext):
     await mesg.edit_text(res, disable_web_page_preview=True)
 
 
-@router.callback_query(F.data == 'text_content')
+@router.callback_query(F.data == text.callback_text_content_ai)
 async def input_text_for_text_content(callback: CallbackQuery, state: FSMContext):
     """обработка нажатия на кнопку 'выделение содержимого текста' """
     await state.set_state(Generate.text_content)
@@ -146,11 +157,12 @@ async def generate_content_of_text(message: Message):
     destination = r"C:\Users\Slav4ik\PycharmProjects\Jarvis_telegram_bot\File_for_text_content"
     await message.bot.download(file=message.document.file_id, destination=destination)
     wait_message = await message.answer(text.gen_text)
+
     answer = await gigaChat.text_content(destination)
     await wait_message.edit_text(answer, disable_web_page_preview=True)
 
 
-@router.callback_query(F.data == 'text_from_audio')
+@router.callback_query(F.data == text.callback_text_from_audio_ai)
 async def input_audio_for_get_text(callback: CallbackQuery, state: FSMContext):
     """обработка нажатия на кнопку 'выделение текста из аудио' """
     await state.set_state(Generate.text_for_audio)
@@ -159,7 +171,6 @@ async def input_audio_for_get_text(callback: CallbackQuery, state: FSMContext):
 
 
 @router.message(Generate.text_for_audio)
-# @router.message(F.content_type == ContentType.AUDIO)
 @flags.chat_action("typing")
 async def generate_text_from_audio(message: Message):
     """генерация текста из аудио"""
@@ -173,21 +184,21 @@ async def generate_text_from_audio(message: Message):
 """------------------------------------------заметки, добавление-------------------------------------------------------"""
 
 
-@router.callback_query(F.data == 'notes')
+@router.callback_query(F.data == text.callback_notes)
 async def show_kb_for_show_edit_delete_create_notes(callback: CallbackQuery):
     """Показывает возможные действия с заметками"""
     await callback.message.answer(text.text_for_notes_kb,
                                   reply_markup=keyboards.notes_show_or_edit_or_delete_kb_or_create)
 
 
-@router.callback_query(F.data == 'show_notes')
+@router.callback_query(F.data == text.callback_show_notes)
 async def show_notes_for_user(callback: CallbackQuery):
     """Показывает все заметки пользователя
     Если заметок нет, то сразу переход в главное меню
     """
     notes = db.get_from_notes_by_user_id(callback.from_user.id)
     if len(notes) != 0:
-        await callback.message.answer('Ваши заметки:')
+        await callback.message.answer(text.message_answer_user_notes)
         for note in notes:
             if note.file_id != '-':
                 parse = parse_note(note)
@@ -195,10 +206,10 @@ async def show_notes_for_user(callback: CallbackQuery):
             else:
                 parse = parse_note(note)
                 await callback.message.answer(parse)
-        await callback.message.answer('Главное меню', reply_markup=keyboards.menu_kb)
+        await callback.message.answer(text.message_answer_main_menu, reply_markup=keyboards.menu_kb)
     else:
-        await callback.message.answer('у вас еще нет заметок')
-        await callback.message.answer('Главное меню', reply_markup=keyboards.menu_kb)
+        await callback.message.answer(text.message_answer_no_notes)
+        await callback.message.answer(text.message_answer_main_menu, reply_markup=keyboards.menu_kb)
 
 
 def parse_note(note: db.Note) -> str:
@@ -209,10 +220,10 @@ def parse_note(note: db.Note) -> str:
     return parse
 
 
-@router.callback_query(F.data == 'create_note')
+@router.callback_query(F.data == text.callback_create_note)
 async def start_create_new_note(callback: CallbackQuery, state: FSMContext):
     """Первое вводное сообщение - ввод темы"""
-    await callback.message.answer('Тема топика или кнопка для выхода', reply_markup=keyboards.exit_kb)
+    await callback.message.answer(text.message_answer_topic_or_exit, reply_markup=keyboards.exit_kb)
     await state.set_state(Create_Note.create_topic)
 
 
@@ -221,7 +232,7 @@ async def create_topic_for_note(message: Message, state: FSMContext):
     """Сохранение темы и предложение ввести текст заметки"""
     await state.update_data(topic_note=message.text)
     await state.set_state(Create_Note.create_description)
-    await message.answer('Текст заметки')
+    await message.answer(text.message_answer_description_note)
 
 
 @router.message(Create_Note.create_description)
@@ -229,7 +240,7 @@ async def create_description_for_note(message: Message, state: FSMContext):
     """Сохранение текста заметки, предложение ввести дату"""
     await state.update_data(desription_note=message.text)
     await state.set_state(Create_Note.create_date)
-    await message.answer('Дата: ')
+    await message.answer(text.message_answer_date_note)
 
 
 @router.message(Create_Note.create_date)
@@ -237,35 +248,37 @@ async def create_date_for_note(message: Message, state: FSMContext):
     """Сохранение даты, предложение добавить фаил"""
     await state.update_data(date_note=message.text)
     await state.set_state(Create_Note.create_file)
-    await message.answer('Фаил')
+    await message.answer(text.message_answer_file_note)
 
 
 @router.message(Create_Note.create_file)
 async def create_file_for_note(message: Message, state: FSMContext):
     """Если существует документ, то добавляем документ. Если сообщение без документа, то ставим - в id документа"""
-    if message.document != None:
+    file_id = '-'
+
+    if message.document is not None:
         file_id = message.document.file_id
-        await state.update_data(file_id=file_id)
-        await state.set_state(Create_Note.save_note)
-    else:
-        await state.update_data(file_id='-')
-        await state.set_state(Create_Note.save_note)
-    await message.answer('Подтвердить сохранение', reply_markup=keyboards.save_or_cansel_note)
+    elif message.audio is not None:
+        file_id = message.audio.file_id
+
+    await state.update_data(file_id=file_id)
+    await state.set_state(Create_Note.save_note)
+    await message.answer(text.message_answer_complete_save_note, reply_markup=keyboards.save_or_cansel_note)
 
 
 @router.callback_query(Create_Note.save_note)
 async def save_note(callback: CallbackQuery, state: FSMContext):
     """Сохранение заметки, если была нажата кнопка сохранить, то получаем save_note. Сохраняем заметку"""
     print(callback.data)
-    if callback.data == 'save_note':
+    if callback.data == text.callback_save_note:
         user_data = await state.get_data()
         user_id, topic, description, date, file_id = callback.from_user.id, user_data['topic_note'], user_data[
             'desription_note'], user_data['date_note'], user_data['file_id']
         answer = db.save_new_note(user_id, topic, description, date, file_id)
-        await callback.message.answer('Заметка сохранена', reply_markup=ReplyKeyboardRemove())
+        await callback.message.answer(text.message_answer_append_note, reply_markup=ReplyKeyboardRemove())
         await menu_callback(callback)
     else:
-        await callback.message.answer('Заметка удалена', reply_markup=ReplyKeyboardRemove())
+        await callback.message.answer(text.message_answer_delete_note, reply_markup=ReplyKeyboardRemove())
         await menu_callback(callback)
     await state.clear()
 
@@ -273,7 +286,7 @@ async def save_note(callback: CallbackQuery, state: FSMContext):
 """------------------------------------------Удаление заметок-------------------------------------------------------"""
 
 
-@router.callback_query(F.data == 'delete_notes')
+@router.callback_query(F.data == text.callback_delete_notes)
 async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
     """Показываем все заметки пользователя для дальнейшего удаления. К каждой заметке добавляем номер"""
     all_notes = db.get_from_notes_by_user_id(callback.from_user.id)
@@ -282,9 +295,9 @@ async def show_all_notes_to_delete(callback: CallbackQuery, state: FSMContext):
         note_dict = await show_notes_add_to_dict(callback, all_notes)
         await state.update_data(d=note_dict)
         await state.set_state(states.Delete_Note.get_number_note)
-        await callback.message.answer('Напишите номера заметок для удаления')
+        await callback.message.answer(text.message_answer_number_notes_to_delete)
     else:
-        await callback.message.answer('Заметок еще нет', reply_markup=keyboards.menu_kb)
+        await callback.message.answer(text.message_answer_no_notes, reply_markup=keyboards.menu_kb)
 
 
 @router.message(states.Delete_Note.get_number_note)
@@ -301,7 +314,7 @@ async def delete_note_by_number(message: Message, state: FSMContext):
         note_id = d[f'{num}']
         db.delete_note_by_note_id(note_id)
 
-    await message.answer('заметки удалены')
+    await message.answer(text.message_answer_delete_note)
     await menu(message)
 
 
@@ -329,7 +342,7 @@ async def show_notes_add_to_dict(callback: CallbackQuery, notes) -> dict:
     return d
 
 
-@router.callback_query(F.data == "edit_notes")
+@router.callback_query(F.data == text.callback_edit_notes)
 async def show_notes_to_edit(callback: CallbackQuery, state: FSMContext):
     """показываем заметик пользователя для редактирования какой то заметки
     показываем все заметки через show_notes
@@ -337,12 +350,12 @@ async def show_notes_to_edit(callback: CallbackQuery, state: FSMContext):
     """
     notes = db.get_from_notes_by_user_id(callback.from_user.id)
     if len(notes) > 0:
-        await callback.message.answer('Номер заметки для редактирования')
+        await callback.message.answer(text.message_answer_edit_number_note)
         dict_note = await show_notes_add_to_dict(callback, notes)
         await state.update_data(d=dict_note)
         await state.set_state(states.Edit_Note.get_number_note)
     else:
-        await callback.message.answer('у вас еще нет заметок', reply_markup=keyboards.menu_kb)
+        await callback.message.answer(text.message_answer_no_notes, reply_markup=keyboards.menu_kb)
 
 
 @router.message(states.Edit_Note.get_number_note)
@@ -358,16 +371,16 @@ async def get_number_note_for_edit(message: Message, state: FSMContext):
     print('n', d)
     note_id = d[note_number]
     await state.update_data(note_id=note_id)
-    await message.answer('Выбери поле для редактирования:', reply_markup=keyboards.edit_note_kb)
+    await message.answer(text.message_answer_choose_row_to_edit, reply_markup=keyboards.edit_note_kb)
 
 
-@router.callback_query(F.data == 'edit_topic')
+@router.callback_query(F.data == text.callback_edit_topic_note)
 async def edit_topic_start(callback: CallbackQuery, state: FSMContext):
     """редактирование заметки
     если было выбрано поле топика заметки
     устанавливаем сотосние на выбор нового раздела
     """
-    await callback.message.answer('Введи новый раздел')
+    await callback.message.answer(text.message_answer_enter_new_topic)
     await state.set_state(states.Edit_Note.edit_topic)
 
 
@@ -381,18 +394,18 @@ async def edit_topic(message: Message, state: FSMContext):
     new_topic = message.text
     note_id = (await state.get_data())['note_id']
     db.update_topic(note_id, new_topic)
-    await message.answer('Заметка обновлена')
-    await message.answer('Выбрать действие:', reply_markup=keyboards.edit_note_again_or_exit)
+    await message.answer(text.message_answer_edit_note)
+    await message.answer(text.message_answer_choose_action, reply_markup=keyboards.edit_note_again_or_exit)
     await state.clear()
 
 
-@router.callback_query(F.data == 'edit_description')
+@router.callback_query(F.data == text.callback_edit_description_note)
 async def edit_description_start(callback: CallbackQuery, state: FSMContext):
     """редактирование заметки
     если выбрано редактирование описания
     устанавливаем состояние на ожидание нового описания
     """
-    await callback.message.answer("Новое описание")
+    await callback.message.answer(text.message_answer_new_description)
     await state.set_state(states.Edit_Note.edit_desc)
 
 
@@ -405,17 +418,17 @@ async def edit_description(message: Message, state: FSMContext):
     desc = message.text
     note_id = (await state.get_data())['note_id']
     db.update_description(note_id, desc)
-    await message.answer('Заметка обновлена')
-    await message.answer('Выбрать действие:', reply_markup=keyboards.edit_note_again_or_exit)
+    await message.answer(text.message_answer_edit_note)
+    await message.answer(text.message_answer_choose_action, reply_markup=keyboards.edit_note_again_or_exit)
     await state.clear()
 
 
-@router.callback_query(F.data == 'edit_date')
+@router.callback_query(F.data == text.callback_edit_date_note)
 async def edit_date_start(callback: CallbackQuery, state: FSMContext):
     """редактирование заметок
     ожидаем новую дату
     """
-    await callback.message.answer("Новая дата")
+    await callback.message.answer(text.message_answer_new_date)
     await state.set_state(states.Edit_Note.edit_date)
 
 
@@ -427,17 +440,17 @@ async def edit_date(message: Message, state: FSMContext):
     date = message.text
     note_id = (await state.get_data())['note_id']
     db.update_date(note_id, date)
-    await message.answer('заметка обновалена', reply_markup=keyboards.edit_note_again_or_exit)
+    await message.answer(text.message_answer_edit_note, reply_markup=keyboards.edit_note_again_or_exit)
     await state.clear()
 
 
-@router.callback_query(F.data == 'edit_file')
+@router.callback_query(F.data == text.callback_edit_file_note)
 async def edit_file_start(callback: CallbackQuery, state: FSMContext):
     """редактирование заметок
     ожидаем отправку новго фаила
     """
     await state.set_state(states.Edit_Note.edit_file)
-    await callback.message.answer('отправьте новый фаил')
+    await callback.message.answer(text.message_answer_send_new_file_note)
 
 
 @router.message(states.Edit_Note.edit_file)
@@ -448,28 +461,28 @@ async def edit_file(message: Message, state: FSMContext):
     file = message.document.file_id
     note_id = (await state.get_data())['note_id']
     db.update_file_note(note_id, file)
-    await message.answer('заметка обновлена', reply_markup=keyboards.edit_note_again_or_exit)
+    await message.answer(text.message_answer_edit_note, reply_markup=keyboards.edit_note_again_or_exit)
     await state.clear()
 
 
 """------------------------------------------------Список дел-----------------------------------------------------"""
 
 
-@router.callback_query(F.data == 'to_do_list')
+@router.callback_query(F.data == text.callback_to_do_list)
 async def todo_options(callback: CallbackQuery):
     """показываем возможности со списком дел"""
-    await callback.message.answer('Список дел', reply_markup=keyboards.todo_list_kb)
+    await callback.message.answer(text.message_answer_to_do_list, reply_markup=keyboards.todo_list_kb)
 
 
-@router.callback_query(F.data == 'show_todo')
+@router.callback_query(F.data == text.callback_show_to_do)
 async def show_to_do_list(callback: CallbackQuery):
     """показываем список дел"""
     all_rows = db.get_to_do_list_for_user(callback.from_user.id)
-    await callback.message.answer('Список дел на сегодня')
+    await callback.message.answer(text.message_answer_to_do_list_day)
     if len(all_rows) > 0:
         await callback.message.answer(await parse_todo(all_rows), reply_markup=keyboards.todo_list_kb)
     else:
-        await callback.message.answer('На сегодня еще нет дел', reply_markup=keyboards.todo_list_kb)
+        await callback.message.answer(text.message_answer_no_to_do, reply_markup=keyboards.todo_list_kb)
 
 
 async def parse_todo(todo_list) -> str:
@@ -477,17 +490,16 @@ async def parse_todo(todo_list) -> str:
     for i in range(len(todo_list)):
         todo = todo_list[i]
         res += f'{i + 1}. ' \
-               f'{todo.description}' \
-               f'\n\n'
+               f'{todo.description}\n'
     return res
 
 
-@router.callback_query(F.data == 'create_todo')
+@router.callback_query(F.data == text.callback_create_to_do)
 async def create_todo_start(callback: CallbackQuery, state: FSMContext):
     """создание дела
     ожидаем ввод текста
     """
-    await callback.message.answer('текст')
+    await callback.message.answer(text.message_answer_text_to_do)
     await state.set_state(states.Create_todo.create_todo)
 
 
@@ -498,15 +510,15 @@ async def create_todo(message: Message, state: FSMContext):
     """
     db.insert_todo(message.from_user.id, message.text)
     await state.clear()
-    await message.answer('добалвено', reply_markup=keyboards.todo_list_kb)
+    await message.answer(text.message_answer_append_to_do, reply_markup=keyboards.todo_list_kb)
 
 
-@router.callback_query(F.data == 'remove_todo')
+@router.callback_query(F.data == text.callback_remove_to_do)
 async def remove_todo_start(callback: CallbackQuery, state: FSMContext):
     """удаление дела
     показываем список дел под номерами
     """
-    await callback.message.answer('выберите номер для удаления')
+    await callback.message.answer(text.message_answer_number_to_do)
     todo_list = db.get_to_do_list_for_user(callback.from_user.id)
     new_list = {}
     res_message = f''
@@ -537,4 +549,17 @@ async def get_todo_number_for_remove(message: Message, state: FSMContext):
         db.delete_todo_by_id(todo_ids[f'{numbers}'])
 
     await state.clear()
-    await message.answer('удалено', reply_markup=keyboards.todo_list_kb)
+    await message.answer(text.message_answer_delete_to_do, reply_markup=keyboards.todo_list_kb)
+
+
+async def morning_message_for_users(bot: Bot):
+    for user in db.get_all_users():
+        user_weather = weather_formatter.format_weather(weather_api_service.get_weather(user.city))
+        user_todo_list = await parse_todo(db.get_to_do_list_for_user(user.user_id))
+        message = f'Привет, погода на сегодня\n' \
+                  f'\n' \
+                  f'{user_weather}\n' \
+                  f'Список дел на сегодня:\n' \
+                  f'{user_todo_list}'
+
+        await bot.send_message(user.user_id, message, reply_markup=keyboards.menu_kb)
